@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -11,6 +13,7 @@ import 'package:cogndown/controller/treino_cognitivo_controller.dart';
 import 'package:cogndown/main.dart';
 import 'package:cogndown/model/modelos_app.dart';
 import 'package:cogndown/view/login_view.dart';
+import 'package:cogndown/view/prancha_comunicacao_view.dart';
 import 'package:cogndown/view/trilha_atividades_view.dart';
 
 void main() {
@@ -20,6 +23,8 @@ void main() {
     final sessao = GetIt.instance<SessaoController>();
     sessao.autenticar('pedro.santos@fatec.sp.gov.br', '123456');
     GetIt.instance<LoginController>().limparCampos();
+    GetIt.instance<PranchaComunicacaoController>().resetarEstado();
+    GetIt.instance<TreinoCognitivoController>().resetarEstado();
   });
 
   group('Grupo 1: Modelos e Funções Auxiliares de Validação', () {
@@ -157,23 +162,26 @@ void main() {
       expect(sessao.nomeUsuarioAtual, equals('Pedro Garibaldi Santos'));
     });
 
-    test('Motor Adaptativo: 2 acertos promovem nível; 2 erros ativam dicas e reduzem complexidade', () {
+    test('Motor Adaptativo: 5 acertos promovem nível; 2 erros ativam dicas e reduzem complexidade', () {
       final sessao = GetIt.instance<SessaoController>();
       sessao.alterarNivelAdaptativo('Básico');
       expect(sessao.nivelAdaptativoAtual, equals('Básico'));
 
-      // 1º acerto
-      sessao.processarResultadoCognitivo(acertou: true);
-      expect(sessao.nivelAdaptativoAtual, equals('Básico'));
+      // 4 acertos -> permanece em Básico
+      for (int i = 0; i < 4; i++) {
+        sessao.processarResultadoCognitivo(acertou: true);
+        expect(sessao.nivelAdaptativoAtual, equals('Básico'));
+      }
 
-      // 2º acerto consecutivo -> Motor promove para Intermediário
+      // 5º acerto consecutivo -> Motor promove para Intermediário
       final msgPromocao = sessao.processarResultadoCognitivo(acertou: true);
       expect(sessao.nivelAdaptativoAtual, equals('Intermediário'));
       expect(msgPromocao, contains('avançou para o nível Intermediário'));
 
-      // Mais 2 acertos em Intermediário -> Promove para Avançado
-      sessao.processarResultadoCognitivo(acertou: true);
-      sessao.processarResultadoCognitivo(acertou: true);
+      // Mais 5 acertos em Intermediário -> Promove para Avançado
+      for (int i = 0; i < 5; i++) {
+        sessao.processarResultadoCognitivo(acertou: true);
+      }
       expect(sessao.nivelAdaptativoAtual, equals('Avançado'));
 
       // Desativa dicas para testar reativação automática
@@ -253,6 +261,38 @@ void main() {
       expect(treinoCtrl.exibirDicaPorErro, isTrue);
     });
 
+    test('TreinoCognitivoController: ao evoluir de nível com 5 acertos, nova pergunta aparece limpa', () {
+      final sessao = GetIt.instance<SessaoController>();
+      final treinoCtrl = GetIt.instance<TreinoCognitivoController>();
+
+      sessao.alterarNivelAdaptativo('Básico');
+      treinoCtrl.resetarEstado();
+
+      // Responde 4 questões corretamente
+      for (int i = 0; i < 4; i++) {
+        final desafio = treinoCtrl.desafioAtual(sessao);
+        treinoCtrl.responderOpcao(desafio.indiceCorreto, sessao);
+        expect(treinoCtrl.acertouQuestaoAtual, isTrue);
+        treinoCtrl.proximoDesafio(sessao);
+      }
+      expect(sessao.acertosConsecutivos, equals(4));
+      expect(sessao.nivelAdaptativoAtual, equals('Básico'));
+
+      // 5ª questão correta -> aciona evolução adaptativa
+      final desafio5 = treinoCtrl.desafioAtual(sessao);
+      treinoCtrl.responderOpcao(desafio5.indiceCorreto, sessao);
+
+      // Nível evoluiu para Intermediário
+      expect(sessao.nivelAdaptativoAtual, equals('Intermediário'));
+      expect(treinoCtrl.notificacaoAdaptativa, contains('Evolução Adaptativa!'));
+
+      // Estado da nova pergunta no novo nível deve estar completamente limpo
+      expect(treinoCtrl.opcaoSelecionada, isNull);
+      expect(treinoCtrl.acertouQuestaoAtual, isFalse);
+      expect(treinoCtrl.mensagemFeedbackResposta, isNull);
+      expect(treinoCtrl.desafioAtual(sessao).nivel, equals('Intermediário'));
+    });
+
     test('ConquistasController: listagem de 6 medalhas e resgate de bônus +5 estrelas', () {
       final sessao = GetIt.instance<SessaoController>();
       final conquistasCtrl = GetIt.instance<ConquistasController>();
@@ -325,6 +365,66 @@ void main() {
       await tester.drag(find.byType(ListView).first, const Offset(0, -350));
       await tester.pumpAndSettle();
       expect(find.text('Associação Visual do Cotidiano'), findsOneWidget);
+    });
+
+    testWidgets('PranchaComunicacaoView renderiza os cartões sem overflow e permite construir frase', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: PranchaComunicacaoView(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Eu quero'), findsOneWidget);
+      expect(find.text('Beber água'), findsOneWidget);
+      expect(find.text('Comer'), findsOneWidget);
+      expect(find.text('Ir ao banheiro'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(InkWell, 'Eu quero'));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(InkWell, 'Comer'));
+      await tester.pump();
+
+      expect(find.text('Expressar (+5 ⭐)'), findsOneWidget);
+    });
+
+    testWidgets('AppScrollBehavior permite arrastar com o mouse para rolar horizontalmente (Web/Desktop)', (WidgetTester tester) async {
+      final controller = ScrollController();
+      await tester.pumpWidget(
+        MaterialApp(
+          scrollBehavior: const AppScrollBehavior(),
+          home: Scaffold(
+            body: SizedBox(
+              width: 200,
+              height: 100,
+              child: SingleChildScrollView(
+                controller: controller,
+                scrollDirection: Axis.horizontal,
+                child: const Row(
+                  children: [
+                    SizedBox(width: 300, height: 100, child: Text('Item 1')),
+                    SizedBox(width: 300, height: 100, child: Text('Item 2')),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(controller.offset, equals(0.0));
+
+      final gesture = await tester.startGesture(const Offset(150, 50), kind: PointerDeviceKind.mouse);
+      await gesture.moveBy(const Offset(-100, 0));
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(controller.offset, greaterThan(0.0));
     });
   });
 }

@@ -82,8 +82,9 @@ class _PranchaComunicacaoViewState extends State<PranchaComunicacaoView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               Text(
                                 'Construtor de Frase CAA',
@@ -232,7 +233,7 @@ class _PranchaComunicacaoViewState extends State<PranchaComunicacaoView> {
                             crossAxisCount: 2,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
-                            childAspectRatio: 1.4,
+                            childAspectRatio: 1.1,
                           ),
                       itemBuilder: (context, index) {
                         final cartao = cartoes[index];
@@ -241,29 +242,36 @@ class _PranchaComunicacaoViewState extends State<PranchaComunicacaoView> {
                           child: InkWell(
                             onTap: () => ctrl.adicionarCartao(cartao),
                             child: Padding(
-                              padding: const EdgeInsets.all(12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 10,
+                              ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
                                     cartao.icone,
-                                    size: 40,
+                                    size: 38,
                                     color: Theme.of(
                                       context,
                                     ).colorScheme.primary,
                                   ),
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: 6),
                                   Text(
                                     cartao.texto,
                                     textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                     style: Theme.of(context)
                                         .textTheme
                                         .titleMedium
                                         ?.copyWith(fontWeight: FontWeight.bold),
                                   ),
-                                  const SizedBox(height: 4),
+                                  const SizedBox(height: 2),
                                   Text(
                                     cartao.categoria,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: Theme.of(
                                       context,
                                     ).textTheme.bodySmall,

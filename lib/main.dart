@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:device_preview_plus/device_preview_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
@@ -73,6 +75,19 @@ void main() {
   runApp(DevicePreview(builder: (context) => const MainApp()));
 }
 
+/// Habilita rolagem arrastando com o mouse (simulação de touch/dedo na web/desktop).
+class AppScrollBehavior extends MaterialScrollBehavior {
+  const AppScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.stylus,
+        PointerDeviceKind.trackpad,
+      };
+}
+
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
 
@@ -80,6 +95,7 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      scrollBehavior: const AppScrollBehavior(),
       locale: DevicePreview.locale(context),
       builder: DevicePreview.appBuilder,
       title: 'CognDown - Estímulo Cognitivo e CAA',

@@ -6,7 +6,7 @@ import 'sessao_controller.dart';
 /// Controlador do Treino Cognitivo Adaptativo (RF006.3) com Adaptação Híbrida.
 class TreinoCognitivoController extends ChangeNotifier {
   final List<DesafioCognitivoModel> _bancoDesafios = const [
-    // Nível Básico (3 questões)
+    // Nível Básico (5 questões)
     DesafioCognitivoModel(
       id: 'cog_b1',
       pergunta: 'Qual objeto usamos para beber água quando estamos com sede?',
@@ -34,8 +34,26 @@ class TreinoCognitivoController extends ChangeNotifier {
       indiceCorreto: 2,
       nivel: 'Básico',
     ),
+    DesafioCognitivoModel(
+      id: 'cog_b4',
+      pergunta: 'Qual peça de roupa colocamos nos pés antes do tênis?',
+      dica: 'Ela é macia e protege os pés dentro do calçado.',
+      iconeEstimulo: Icons.accessibility_new_outlined,
+      opcoes: ['Meia', 'Chapéu', 'Luva'],
+      indiceCorreto: 0,
+      nivel: 'Básico',
+    ),
+    DesafioCognitivoModel(
+      id: 'cog_b5',
+      pergunta: 'Quando o céu fica escuro e a lua aparece, que momento é esse?',
+      dica: 'É o período em que nos preparamos para dormir e descansar.',
+      iconeEstimulo: Icons.nights_stay_outlined,
+      opcoes: ['Manhã', 'Tarde', 'Noite'],
+      indiceCorreto: 2,
+      nivel: 'Básico',
+    ),
 
-    // Nível Intermediário (3 questões)
+    // Nível Intermediário (5 questões)
     DesafioCognitivoModel(
       id: 'cog_i1',
       pergunta:
@@ -64,8 +82,30 @@ class TreinoCognitivoController extends ChangeNotifier {
       indiceCorreto: 1,
       nivel: 'Intermediário',
     ),
+    DesafioCognitivoModel(
+      id: 'cog_i4',
+      pergunta: 'Qual destes objetos usamos para escovar os dentes?',
+      dica: 'Usamos junto com o creme dental na pia do banheiro.',
+      iconeEstimulo: Icons.health_and_safety_outlined,
+      opcoes: ['Pente de cabelo', 'Escova de dentes', 'Tesoura'],
+      indiceCorreto: 1,
+      nivel: 'Intermediário',
+    ),
+    DesafioCognitivoModel(
+      id: 'cog_i5',
+      pergunta: 'Se um colega estiver triste e chorando, o que podemos fazer?',
+      dica: 'Um gesto de carinho e empatia faz toda a diferença.',
+      iconeEstimulo: Icons.volunteer_activism_outlined,
+      opcoes: [
+        'Oferecer um abraço ou chamar um adulto',
+        'Gritar com ele',
+        'Sair correndo e rir',
+      ],
+      indiceCorreto: 0,
+      nivel: 'Intermediário',
+    ),
 
-    // Nível Avançado (3 questões)
+    // Nível Avançado (5 questões)
     DesafioCognitivoModel(
       id: 'cog_a1',
       pergunta: 'Quantas partes (sílabas) tem a palavra BO - NE - CA?',
@@ -100,6 +140,33 @@ class TreinoCognitivoController extends ChangeNotifier {
         'Dormir -> Jantar -> Acordar',
         'Acordar -> Escovar os dentes -> Tomar café',
         'Almoçar -> Acordar -> Dormir',
+      ],
+      indiceCorreto: 1,
+      nivel: 'Avançado',
+    ),
+    DesafioCognitivoModel(
+      id: 'cog_a4',
+      pergunta: 'Para atravessar a rua com segurança, por onde devemos passar?',
+      dica: 'São aquelas faixas brancas pintadas no chão perto do semáforo.',
+      iconeEstimulo: Icons.traffic_outlined,
+      opcoes: [
+        'Na faixa de pedestres com atenção',
+        'Correndo entre os carros em movimento',
+        'Olhando apenas para o celular',
+      ],
+      indiceCorreto: 0,
+      nivel: 'Avançado',
+    ),
+    DesafioCognitivoModel(
+      id: 'cog_a5',
+      pergunta:
+          'Se você encontrar um material que caiu do estojo de um colega, o que deve fazer?',
+      dica: 'Cuidar dos pertences do grupo ajuda na boa convivência.',
+      iconeEstimulo: Icons.handshake_outlined,
+      opcoes: [
+        'Esconder na sua própria mochila',
+        'Devolver com gentileza ao colega ou entregar ao professor',
+        'Jogar no cesto de lixo',
       ],
       indiceCorreto: 1,
       nivel: 'Avançado',
@@ -187,6 +254,10 @@ class TreinoCognitivoController extends ChangeNotifier {
       );
       if (sessao.nivelAdaptativoAtual != nivelAntes) {
         indiceAtualNoNivel = 0;
+        opcaoSelecionada = null;
+        acertouQuestaoAtual = false;
+        exibirDicaPorErro = false;
+        mensagemFeedbackResposta = null;
         _ultimoNivelSincronizado = sessao.nivelAdaptativoAtual;
       }
     } else {
@@ -200,6 +271,9 @@ class TreinoCognitivoController extends ChangeNotifier {
       if (sessao.nivelAdaptativoAtual != nivelAntes) {
         indiceAtualNoNivel = 0;
         opcaoSelecionada = null;
+        acertouQuestaoAtual = false;
+        exibirDicaPorErro = false;
+        mensagemFeedbackResposta = null;
         _ultimoNivelSincronizado = sessao.nivelAdaptativoAtual;
       }
     }

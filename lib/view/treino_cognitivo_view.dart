@@ -65,7 +65,7 @@ class _TreinoCognitivoViewState extends State<TreinoCognitivoView> {
                             ),
                           ),
                           Text(
-                            'Sequência p/ evoluir: ${sessao.acertosConsecutivos}/2',
+                            'Sequência p/ evoluir: ${sessao.acertosConsecutivos}/${SessaoController.metaAcertosParaEvoluir}',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                           Text(

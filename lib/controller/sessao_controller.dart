@@ -10,6 +10,9 @@ class SessaoController extends ChangeNotifier {
     'Avançado',
   ];
 
+  static const int metaAcertosParaEvoluir = 5;
+  static const int metaErrosParaSuporte = 2;
+
   final List<UsuarioModel> _usuariosCadastrados = [
     UsuarioModel(
       nome: 'Pedro Garibaldi Santos',
@@ -194,7 +197,7 @@ class SessaoController extends ChangeNotifier {
   }
 
   /// Motor de Adaptação Híbrida Automática (RF006.3):
-  /// - 2 acertos seguidos promovem o nível ('Básico' -> 'Intermediário' -> 'Avançado').
+  /// - 5 acertos seguidos promovem o nível ('Básico' -> 'Intermediário' -> 'Avançado').
   /// - 2 erros seguidos ativam dicas visuais contínuas e reduzem um nível para evitar frustração.
   /// Retorna uma mensagem explicativa quando o algoritmo realiza um ajuste adaptativo.
   String? processarResultadoCognitivo({
@@ -211,14 +214,14 @@ class SessaoController extends ChangeNotifier {
       u.acertosConsecutivos += 1;
       u.errosConsecutivos = 0;
 
-      if (u.acertosConsecutivos >= 2) {
+      if (u.acertosConsecutivos >= metaAcertosParaEvoluir) {
         final idxAtual = niveisDisponiveis.indexOf(u.nivelAdaptativoAtual);
         if (idxAtual >= 0 && idxAtual < niveisDisponiveis.length - 1) {
           final proximoNivel = niveisDisponiveis[idxAtual + 1];
           u.nivelAdaptativoAtual = proximoNivel;
           u.acertosConsecutivos = 0;
           mensagemAdaptativa =
-              'Evolução Adaptativa! Você acertou 2 vezes seguidas e avançou para o nível $proximoNivel!';
+              'Evolução Adaptativa! Você acertou $metaAcertosParaEvoluir vezes seguidas e avançou para o nível $proximoNivel!';
         } else {
           u.acertosConsecutivos = 0;
           mensagemAdaptativa =
@@ -229,7 +232,7 @@ class SessaoController extends ChangeNotifier {
       u.errosConsecutivos += 1;
       u.acertosConsecutivos = 0;
 
-      if (u.errosConsecutivos >= 2) {
+      if (u.errosConsecutivos >= metaErrosParaSuporte) {
         u.exibirDicasVisuais = true;
         final idxAtual = niveisDisponiveis.indexOf(u.nivelAdaptativoAtual);
         if (idxAtual > 0) {
