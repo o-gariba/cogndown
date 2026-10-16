@@ -1,7 +1,7 @@
-name: app_projeto
-description: "A new Flutter project."
+name: cogndown
+description: "CognDown - Software adaptativo e gamificado para o estímulo de habilidades cognitivas e de comunicação em indivíduos com Síndrome de Down."
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.0.0+1
 
 environment:
   sdk: ^3.12.0

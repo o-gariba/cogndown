@@ -13,7 +13,7 @@ Protótipo desenvolvido para a disciplina de **Programação para Dispositivos M
 - [x] **Etapa 4 (Concluída):** Saneamento de *Code Smells* (Sub-etapa 4.0) + Módulos Específicos 1, 2 e 3 (`RF006.1` Trilha com `ListView`, `RF006.2` Prancha CAA com `GridView`, `RF006.3` Treino Cognitivo com Adaptação Híbrida + `RF007` — **40% da nota**).
 - [x] **Etapa 5 (Concluída):** Gamificação e Painel Adaptativo — Módulos 4 e 5 (`RF006.4` Mural de Conquistas e `RF006.5` Painel Adaptativo e Avaliação SUS — **20% da nota**).
 - [x] **Refatoração Pós-Etapa 5 e Guia Clínico (Concluída):** Sincronização reativa de nível/usuário no Treino Cognitivo, isolamento completo de estado no logout, navegação contextual Trilha → Prancha CAA, cálculo de Taxa de Precisão Cognitiva (%) e Escore SUS (0–100), e elaboração do **[Guia para Profissionais da Saúde e Educação Especial (`GUIA_PROFISSIONAIS_SAUDE_PCD.md`)](GUIA_PROFISSIONAIS_SAUDE_PCD.md)**.
-- [x] **Etapa 6 (Concluída):** Suíte de Testes Automatizados com 12 testes aprovados (`test/app_projeto_test.dart`), Verificação Estática com 0 erros (`flutter analyze`) e Checklist Definitivo de 100% da Rubrica Oficial.
+- [x] **Etapa 6 (Concluída):** Suíte de Testes Automatizados com 12 testes aprovados (`test/cogndown_test.dart`), Verificação Estática com 0 erros (`flutter analyze`) e Checklist Definitivo de 100% da Rubrica Oficial.
 
 ---
 
@@ -71,7 +71,7 @@ Na tela de Login (`LoginView`), você pode clicar no botão **"Preencher conta d
 
 ```bash
 # Executar a suíte de testes automatizados (12 testes cobrindo os 4 grupos)
-flutter test test/app_projeto_test.dart
+flutter test test/cogndown_test.dart
 
 # Verificar análise estática de código (0 issues)
 flutter analyze

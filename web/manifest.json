@@ -1,11 +1,11 @@
 {
-    "name": "app_projeto",
-    "short_name": "app_projeto",
+    "name": "CognDown",
+    "short_name": "CognDown",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "CognDown - Software adaptativo e gamificado para o estímulo de habilidades cognitivas e de comunicação em indivíduos com Síndrome de Down.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

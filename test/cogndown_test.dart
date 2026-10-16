@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 
-import 'package:app_projeto/controller/conquistas_controller.dart';
-import 'package:app_projeto/controller/login_controller.dart';
-import 'package:app_projeto/controller/painel_adaptativo_controller.dart';
-import 'package:app_projeto/controller/prancha_comunicacao_controller.dart';
-import 'package:app_projeto/controller/sessao_controller.dart';
-import 'package:app_projeto/controller/treino_cognitivo_controller.dart';
-import 'package:app_projeto/main.dart';
-import 'package:app_projeto/model/modelos_app.dart';
-import 'package:app_projeto/view/login_view.dart';
-import 'package:app_projeto/view/trilha_atividades_view.dart';
+import 'package:cogndown/controller/conquistas_controller.dart';
+import 'package:cogndown/controller/login_controller.dart';
+import 'package:cogndown/controller/painel_adaptativo_controller.dart';
+import 'package:cogndown/controller/prancha_comunicacao_controller.dart';
+import 'package:cogndown/controller/sessao_controller.dart';
+import 'package:cogndown/controller/treino_cognitivo_controller.dart';
+import 'package:cogndown/main.dart';
+import 'package:cogndown/model/modelos_app.dart';
+import 'package:cogndown/view/login_view.dart';
+import 'package:cogndown/view/trilha_atividades_view.dart';
 
 void main() {
   setUp(() {
