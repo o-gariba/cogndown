@@ -10,10 +10,12 @@ import 'package:cogndown/controller/painel_adaptativo_controller.dart';
 import 'package:cogndown/controller/prancha_comunicacao_controller.dart';
 import 'package:cogndown/controller/sessao_controller.dart';
 import 'package:cogndown/controller/treino_cognitivo_controller.dart';
+import 'package:cogndown/controller/trilha_atividades_controller.dart';
 import 'package:cogndown/main.dart';
 import 'package:cogndown/model/modelos_app.dart';
 import 'package:cogndown/view/login_view.dart';
 import 'package:cogndown/view/prancha_comunicacao_view.dart';
+import 'package:cogndown/view/treino_cognitivo_view.dart';
 import 'package:cogndown/view/trilha_atividades_view.dart';
 
 void main() {
@@ -25,6 +27,7 @@ void main() {
     GetIt.instance<LoginController>().limparCampos();
     GetIt.instance<PranchaComunicacaoController>().resetarEstado();
     GetIt.instance<TreinoCognitivoController>().resetarEstado();
+    GetIt.instance<TrilhaAtividadesController>().resetarEstado();
   });
 
   group('Grupo 1: Modelos e Funções Auxiliares de Validação', () {
@@ -204,7 +207,7 @@ void main() {
   });
 
   group('Grupo 3: Controladores Específicos do Domínio (RF006)', () {
-    test('PranchaComunicacaoController: montagem, histórico e premiação de frases CAA', () {
+    test('PranchaComunicacaoController: montagem, histórico e premiação de frases CAA', () async {
       final sessao = GetIt.instance<SessaoController>();
       final pranchaCtrl = GetIt.instance<PranchaComunicacaoController>();
 
@@ -228,7 +231,7 @@ void main() {
 
       // Expressão da frase e premiação com estrelas (+5 ⭐)
       final estrelasAntes = sessao.estrelasTotais;
-      final fraseExpressa = pranchaCtrl.expressarFrase(sessao);
+      final fraseExpressa = await pranchaCtrl.expressarFrase(sessao);
       expect(fraseExpressa, isNotNull);
       expect(pranchaCtrl.fraseEmConstrucao, isEmpty);
       expect(pranchaCtrl.historicoFrasesRecentes.first, equals(fraseExpressa));
@@ -312,7 +315,7 @@ void main() {
       }
     });
 
-    test('PainelAdaptativoController: registro de avaliação clínica na escala SUS', () {
+    test('PainelAdaptativoController: registro de avaliação clínica na escala SUS', () async {
       final sessao = GetIt.instance<SessaoController>();
       final painelCtrl = GetIt.instance<PainelAdaptativoController>();
 
@@ -320,7 +323,7 @@ void main() {
       painelCtrl.atualizarNotaSus(4.5);
       painelCtrl.txtObservacaoClinica.text = 'Sessão com boa evolução no reconhecimento visual.';
 
-      final resultado = painelCtrl.registrarAvaliacao(sessao);
+      final resultado = await painelCtrl.registrarAvaliacao(sessao);
       expect(resultado, isNull); // Sem erros
       expect(painelCtrl.historicoAvaliacoes.length, equals(totalAntes + 1));
       expect(painelCtrl.historicoAvaliacoes.first.notaSatisfacaoSus, equals(4.5));
@@ -425,6 +428,42 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(controller.offset, greaterThan(0.0));
+    });
+
+    testWidgets('TrilhaAtividadesView abre módulos cognitivos com os níveis correspondentes', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(600, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final sessao = GetIt.instance<SessaoController>();
+      sessao.alterarNivelAdaptativo('Básico');
+
+      await tester.pumpWidget(
+        MaterialApp(
+          initialRoute: 'trilha_atividades',
+          routes: {
+            'trilha_atividades': (context) => const TrilhaAtividadesView(),
+            'treino_cognitivo': (context) => const TreinoCognitivoView(),
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Seleciona a categoria 'Cognitivo' para listar os módulos de treino cognitivo
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Cognitivo'));
+      await tester.pumpAndSettle();
+
+      final itemMod4 = find.text('Reconhecimento de Rotinas e Categorias');
+      expect(itemMod4, findsOneWidget);
+
+      // Toca no módulo de Rotinas e Categorias (Intermediário)
+      await tester.tap(itemMod4);
+      await tester.pumpAndSettle();
+
+      // Confirma que abriu no nível Intermediário
+      expect(find.text('Nível: Intermediário'), findsOneWidget);
+      expect(find.textContaining('abraço'), findsOneWidget);
     });
   });
 }

@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:device_preview_plus/device_preview_plus.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 
@@ -15,6 +16,7 @@ import 'controller/sessao_controller.dart';
 import 'controller/sobre_controller.dart';
 import 'controller/trilha_atividades_controller.dart';
 import 'controller/treino_cognitivo_controller.dart';
+import 'firebase_options.dart';
 import 'view/cadastro_usuario_view.dart';
 import 'view/conquistas_view.dart';
 import 'view/login_view.dart';
@@ -70,7 +72,15 @@ void registrarDependencias() {
   }
 }
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (_) {
+    // Fallback seguro caso o Firebase já esteja inicializado ou em ambiente de teste.
+  }
   registrarDependencias();
   runApp(DevicePreview(builder: (context) => const MainApp()));
 }
@@ -132,4 +142,3 @@ class MainApp extends StatelessWidget {
     );
   }
 }
-
