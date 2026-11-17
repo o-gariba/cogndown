@@ -13,8 +13,10 @@ class LoginView extends StatefulWidget {
 class _LoginViewState extends State<LoginView> {
   final ctrl = GetIt.I.get<LoginController>();
 
-  void _realizarLogin() {
-    final erro = ctrl.validarELogar();
+  Future<void> _realizarLogin() async {
+    final erro = await ctrl.validarELogar();
+    if (!mounted) return;
+
     if (erro != null) {
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -70,9 +72,10 @@ class _LoginViewState extends State<LoginView> {
                     Text(
                       'CognDown',
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                     ),
                     Text(
                       'Estímulo Cognitivo e Comunicação Adaptativa',
@@ -117,28 +120,42 @@ class _LoginViewState extends State<LoginView> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, 'recuperar_senha');
-                        },
+                        onPressed: ctrl.carregando
+                            ? null
+                            : () {
+                                Navigator.pushNamed(context, 'recuperar_senha');
+                              },
                         child: const Text('Esqueceu a senha?'),
                       ),
                     ),
                     const SizedBox(height: 12),
 
-                    // Botão Entrar (RF001)
+                    // Botão Entrar com indicador de progresso (RF001)
                     SizedBox(
                       height: 48,
                       child: ElevatedButton.icon(
-                        onPressed: _realizarLogin,
-                        icon: const Icon(Icons.login),
-                        label: const Text('Entrar'),
+                        onPressed: ctrl.carregando ? null : _realizarLogin,
+                        icon: ctrl.carregando
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.login),
+                        label: Text(
+                          ctrl.carregando ? 'Autenticando...' : 'Entrar',
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
 
                     // Atalho de usabilidade para preenchimento rápido em testes
                     OutlinedButton.icon(
-                      onPressed: ctrl.preencherContaDemonstracao,
+                      onPressed: ctrl.carregando
+                          ? null
+                          : ctrl.preencherContaDemonstracao,
                       icon: const Icon(Icons.bolt),
                       label: const Text('Preencher conta de demonstração'),
                     ),
@@ -146,9 +163,11 @@ class _LoginViewState extends State<LoginView> {
 
                     // Link para Cadastro de Usuário (RF001 / RF002)
                     TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, 'cadastro_usuario');
-                      },
+                      onPressed: ctrl.carregando
+                          ? null
+                          : () {
+                              Navigator.pushNamed(context, 'cadastro_usuario');
+                            },
                       child: const Text('Ainda não tem conta? Cadastre-se.'),
                     ),
                   ],

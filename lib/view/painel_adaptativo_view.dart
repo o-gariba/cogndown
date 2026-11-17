@@ -1,8 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 
 import '../controller/painel_adaptativo_controller.dart';
 import '../controller/sessao_controller.dart';
+import '../model/modelos_app.dart';
 
 class PainelAdaptativoView extends StatefulWidget {
   const PainelAdaptativoView({super.key});
@@ -15,8 +17,10 @@ class _PainelAdaptativoViewState extends State<PainelAdaptativoView> {
   final ctrl = GetIt.I.get<PainelAdaptativoController>();
   final sessao = GetIt.I.get<SessaoController>();
 
-  void _salvarAvaliacaoClinica() {
-    final erro = ctrl.registrarAvaliacao(sessao);
+  Future<void> _salvarAvaliacaoClinica() async {
+    final erro = await ctrl.registrarAvaliacao(sessao);
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).clearSnackBars();
     if (erro != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -38,11 +42,37 @@ class _PainelAdaptativoViewState extends State<PainelAdaptativoView> {
     );
   }
 
+  Widget _construirCardAvaliacao(RegistroAvaliacaoModel reg) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        leading: CircleAvatar(
+          child: Text(
+            '${reg.escoreSusEscala100}',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        title: Text(reg.observacao),
+        subtitle: Text(
+          'Assistido(a): ${reg.nomeAvaliado} • ${reg.dataHora}\n'
+          'Nível: ${reg.nivelConfigurado} • SUS: ${reg.escoreSusEscala100}/100 (${reg.classificacaoSus})',
+        ),
+        isThreeLine: true,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: Listenable.merge([ctrl, sessao]),
       builder: (context, _) {
+        final uid = sessao.uidUsuarioAtual;
+        final usarFirestore = uid.isNotEmpty && uid != 'demo_uid';
+
         return Scaffold(
           appBar: AppBar(
             title: const Text('Painel Adaptativo e Desempenho'),
@@ -206,7 +236,7 @@ class _PainelAdaptativoViewState extends State<PainelAdaptativoView> {
                 ),
                 const SizedBox(height: 16),
 
-                // Seção 3: Avaliação de Usabilidade e Engajamento (Escala SUS do Anteprojeto)
+                // Seção 3: Avaliação de Usabilidade e Engajamento (Inserção no Firestore - RF003)
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -261,9 +291,22 @@ class _PainelAdaptativoViewState extends State<PainelAdaptativoView> {
                           width: double.infinity,
                           height: 46,
                           child: ElevatedButton.icon(
-                            onPressed: _salvarAvaliacaoClinica,
-                            icon: const Icon(Icons.add_task),
-                            label: const Text('Salvar Registro de Avaliação'),
+                            onPressed:
+                                ctrl.salvando ? null : _salvarAvaliacaoClinica,
+                            icon: ctrl.salvando
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.add_task),
+                            label: Text(
+                              ctrl.salvando
+                                  ? 'Salvando no Firestore...'
+                                  : 'Salvar Registro de Avaliação',
+                            ),
                           ),
                         ),
                       ],
@@ -272,36 +315,96 @@ class _PainelAdaptativoViewState extends State<PainelAdaptativoView> {
                 ),
                 const SizedBox(height: 16),
 
-                // Histórico de Registros Clínicos / SUS
-                Text(
-                  'Histórico de Avaliações Registradas (${ctrl.historicoAvaliacoes.length})',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                ...ctrl.historicoAvaliacoes.map(
-                  (reg) => Card(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        child: Text(
-                          '${reg.escoreSusEscala100}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
+                // Seção 4: Recuperação em Tempo Real da 1ª Coleção `avaliacoes_sus` (RF004 - StreamBuilder + ListView)
+                if (usarFirestore)
+                  StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                    stream: ctrl.streamAvaliacoesUsuario(uid),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              children: [
+                                const Text(
+                                  'Falha ao recuperar avaliações do Firebase Firestore.',
+                                ),
+                                const SizedBox(height: 8),
+                                OutlinedButton.icon(
+                                  onPressed: () => setState(() {}),
+                                  icon: const Icon(Icons.refresh),
+                                  label: const Text('Tentar novamente'),
+                                ),
+                              ],
+                            ),
                           ),
+                        );
+                      }
+
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+
+                      final registros = (snapshot.data?.docs ?? [])
+                          .map((d) => RegistroAvaliacaoModel.fromMap(d.data()))
+                          .toList()
+                        ..sort(
+                          (a, b) => b.criadoEmMs.compareTo(a.criadoEmMs),
+                        );
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Histórico de Avaliações Registradas (${registros.length})',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          if (registros.isEmpty)
+                            const Card(
+                              child: Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Text(
+                                  'Nenhuma avaliação registrada para este usuário ainda.',
+                                ),
+                              ),
+                            )
+                          else
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: registros.length,
+                              itemBuilder: (context, index) =>
+                                  _construirCardAvaliacao(registros[index]),
+                            ),
+                        ],
+                      );
+                    },
+                  )
+                else ...[
+                  Text(
+                    'Histórico de Avaliações Registradas (${ctrl.historicoAvaliacoes.length})',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
-                      ),
-                      title: Text(reg.observacao),
-                      subtitle: Text(
-                        'Assistido(a): ${reg.nomeAvaliado} • ${reg.dataHora}\n'
-                        'Nível: ${reg.nivelConfigurado} • SUS: ${reg.escoreSusEscala100}/100 (${reg.classificacaoSus})',
-                      ),
-                      isThreeLine: true,
-                    ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: ctrl.historicoAvaliacoes.length,
+                    itemBuilder: (context, index) =>
+                        _construirCardAvaliacao(ctrl.historicoAvaliacoes[index]),
+                  ),
+                ],
               ],
             ),
           ),

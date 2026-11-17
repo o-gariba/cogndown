@@ -19,8 +19,10 @@ class _CadastroUsuarioViewState extends State<CadastroUsuarioView> {
     ctrl.limparCampos(notificar: false);
   }
 
-  void _confirmarCadastro() {
-    final erro = ctrl.validarECadastrar();
+  Future<void> _confirmarCadastro() async {
+    final erro = await ctrl.validarECadastrar();
+    if (!mounted) return;
+
     if (erro != null) {
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -35,7 +37,9 @@ class _CadastroUsuarioViewState extends State<CadastroUsuarioView> {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Cadastro realizado com sucesso! Bem-vindo(a)!'),
+        content: Text(
+          'Cadastro realizado com sucesso no Firebase! Bem-vindo(a)!',
+        ),
         backgroundColor: Colors.green,
       ),
     );
@@ -147,13 +151,21 @@ class _CadastroUsuarioViewState extends State<CadastroUsuarioView> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Botão para confirmação do cadastro (RF002)
+                  // Botão para confirmação do cadastro com indicador de progresso (RF002)
                   SizedBox(
                     height: 48,
                     child: ElevatedButton.icon(
-                      onPressed: _confirmarCadastro,
-                      icon: const Icon(Icons.check_circle_outline),
-                      label: const Text('Criar conta'),
+                      onPressed: ctrl.carregando ? null : _confirmarCadastro,
+                      icon: ctrl.carregando
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.check_circle_outline),
+                      label: Text(
+                        ctrl.carregando ? 'Registrando conta...' : 'Criar conta',
+                      ),
                     ),
                   ),
                 ],

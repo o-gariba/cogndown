@@ -1,8 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 
 import '../controller/prancha_comunicacao_controller.dart';
 import '../controller/sessao_controller.dart';
+import '../model/modelos_app.dart';
 
 class PranchaComunicacaoView extends StatefulWidget {
   const PranchaComunicacaoView({super.key});
@@ -15,27 +17,40 @@ class _PranchaComunicacaoViewState extends State<PranchaComunicacaoView> {
   final ctrl = GetIt.I.get<PranchaComunicacaoController>();
   final sessao = GetIt.I.get<SessaoController>();
 
-  void _expressarFrase() {
-    final frase = ctrl.expressarFrase(sessao);
-    ScaffoldMessenger.of(context).clearSnackBars();
-    if (frase == null) {
+  Future<void> _expressarFrase() async {
+    try {
+      final frase = await ctrl.expressarFrase(sessao);
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).clearSnackBars();
+      if (frase == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Toque em pelo menos um cartão abaixo para montar sua frase.',
+            ),
+            backgroundColor: Colors.orange.shade800,
+          ),
+        );
+        return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text(
-            'Toque em pelo menos um cartão abaixo para montar sua frase.',
-          ),
-          backgroundColor: Colors.orange.shade800,
+          content: Text('Frase expressada: "$frase" (+5 estrelas!)'),
+          backgroundColor: Colors.green.shade700,
         ),
       );
-      return;
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao salvar frase no Firebase Firestore: $e'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
     }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Frase expressada: "$frase" (+5 estrelas!)'),
-        backgroundColor: Colors.green.shade700,
-      ),
-    );
   }
 
   void _repetirFraseRecente(String frase) {
@@ -55,6 +70,8 @@ class _PranchaComunicacaoViewState extends State<PranchaComunicacaoView> {
       listenable: Listenable.merge([ctrl, sessao]),
       builder: (context, _) {
         final cartoes = ctrl.cartoesFiltrados;
+        final uid = sessao.uidUsuarioAtual;
+        final usarFirestore = uid.isNotEmpty && uid != 'demo_uid';
 
         return Scaffold(
           appBar: AppBar(
@@ -164,8 +181,82 @@ class _PranchaComunicacaoViewState extends State<PranchaComunicacaoView> {
                               ),
                             ],
                           ),
-                          // Histórico de Frases Recentes (Repetição com 1 toque)
-                          if (ctrl.historicoFrasesRecentes.isNotEmpty) ...[
+                          // Recuperação em Tempo Real da 2ª Coleção distinta `frases_caa` (RF004 - StreamBuilder + ListView)
+                          if (usarFirestore)
+                            StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                              stream: ctrl.streamFrasesUsuario(uid),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasError) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: Row(
+                                      children: [
+                                        const Expanded(
+                                          child: Text(
+                                            'Erro ao carregar histórico de frases do Firestore.',
+                                            style: TextStyle(fontSize: 12),
+                                          ),
+                                        ),
+                                        TextButton(
+                                          onPressed: () => setState(() {}),
+                                          child: const Text('Tentar novamente'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+
+                                final docs = snapshot.data?.docs ?? [];
+                                if (docs.isEmpty) {
+                                  return const SizedBox.shrink();
+                                }
+
+                                final registros = docs
+                                    .map(
+                                      (d) =>
+                                          RegistroFraseCaaModel.fromMap(
+                                            d.data(),
+                                          ),
+                                    )
+                                    .toList()
+                                  ..sort(
+                                    (a, b) =>
+                                        b.criadoEmMs.compareTo(a.criadoEmMs),
+                                  );
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Divider(height: 18),
+                                    SizedBox(
+                                      height: 36,
+                                      child: ListView.builder(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: registros.length,
+                                        itemBuilder: (context, index) {
+                                          final f = registros[index].frase;
+                                          return Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: 6,
+                                            ),
+                                            child: ActionChip(
+                                              avatar: const Icon(
+                                                Icons.volume_up,
+                                                size: 14,
+                                              ),
+                                              label: Text(f),
+                                              onPressed: () =>
+                                                  _repetirFraseRecente(f),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            )
+                          else if (ctrl.historicoFrasesRecentes.isNotEmpty) ...[
                             const Divider(height: 18),
                             SingleChildScrollView(
                               scrollDirection: Axis.horizontal,

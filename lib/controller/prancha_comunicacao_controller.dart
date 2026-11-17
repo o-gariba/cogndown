@@ -1,9 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../model/modelos_app.dart';
 import 'sessao_controller.dart';
 
-/// Controlador da Prancha de Comunicação Alternativa - CAA (RF006.2 e RF007 - GridView).
+/// Controlador da Prancha de Comunicação Alternativa - CAA.
+/// Cumpre RF003 (Inserção na coleção `frases_caa` com >= 5 campos e separação por usuário)
+/// e RF004 (Recuperação em tempo real na 2ª coleção distinta `frases_caa` via StreamBuilder + ListView).
 class PranchaComunicacaoController extends ChangeNotifier {
   static const List<String> categorias = [
     'Todas',
@@ -104,6 +107,14 @@ class PranchaComunicacaoController extends ChangeNotifier {
   String get textoFraseAtual =>
       fraseEmConstrucao.map((c) => c.texto).join(' ');
 
+  /// Stream em tempo real da 2ª coleção `frases_caa` filtrada pelo `uid` do usuário logado (RF004).
+  Stream<QuerySnapshot<Map<String, dynamic>>> streamFrasesUsuario(String uid) {
+    return FirebaseFirestore.instance
+        .collection('frases_caa')
+        .where('uid', isEqualTo: uid)
+        .snapshots();
+  }
+
   void selecionarCategoria(String novaCategoria, {bool notificar = true}) {
     if (!categorias.contains(novaCategoria)) return;
     categoriaSelecionada = novaCategoria;
@@ -138,20 +149,48 @@ class PranchaComunicacaoController extends ChangeNotifier {
     }
   }
 
-  /// Expressa a frase montada na prancha, registra na sessão (+5 estrelas) e salva no histórico.
-  String? expressarFrase(SessaoController sessao) {
+  /// Expressa a frase montada na prancha, registra na sessão (+5 estrelas)
+  /// e insere na coleção `frases_caa` do Cloud Firestore separada por `uid` (RF003).
+  Future<String?> expressarFrase(SessaoController sessao) async {
     if (fraseEmConstrucao.isEmpty) {
       return null;
     }
     final fraseFinal = textoFraseAtual;
+    final qtdCartoes = fraseEmConstrucao.length;
+
     historicoFrasesRecentes.remove(fraseFinal);
     historicoFrasesRecentes.insert(0, fraseFinal);
     if (historicoFrasesRecentes.length > 5) {
       historicoFrasesRecentes.removeLast();
     }
+
     sessao.registrarFraseCaa(estrelasBonus: 5);
     fraseEmConstrucao.clear();
     notifyListeners();
+
+    final uid = sessao.uidUsuarioAtual;
+    if (uid.isNotEmpty && uid != 'demo_uid') {
+      final agora = DateTime.now();
+      final horarioFormatado =
+          '${agora.day.toString().padLeft(2, '0')}/${agora.month.toString().padLeft(2, '0')}/${agora.year} '
+          '${agora.hour.toString().padLeft(2, '0')}:${agora.minute.toString().padLeft(2, '0')}';
+
+      final registro = RegistroFraseCaaModel(
+        uid: uid,
+        nomeUsuario: sessao.nomeUsuarioAtual,
+        frase: fraseFinal,
+        categoriaFiltro: categoriaSelecionada,
+        quantidadeCartoes: qtdCartoes,
+        estrelasGanhas: 5,
+        dataHora: horarioFormatado,
+        criadoEmMs: agora.millisecondsSinceEpoch,
+      );
+
+      await FirebaseFirestore.instance
+          .collection('frases_caa')
+          .add(registro.toMap());
+    }
+
     return fraseFinal;
   }
 

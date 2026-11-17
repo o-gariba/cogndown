@@ -38,6 +38,9 @@ class _TrilhaAtividadesViewState extends State<TrilhaAtividadesView> {
       } else {
         pranchaCtrl.selecionarCategoria('Todas', notificar: false);
       }
+    } else if (modulo.rotaDestino == 'treino_cognitivo') {
+      sessao.alterarNivelAdaptativo(modulo.nivelDificuldade);
+      GetIt.I.get<TreinoCognitivoController>().resetarEstado();
     }
     Navigator.pushNamed(context, modulo.rotaDestino);
   }

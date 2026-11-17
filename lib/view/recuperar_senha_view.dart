@@ -19,8 +19,11 @@ class _RecuperarSenhaViewState extends State<RecuperarSenhaView> {
     ctrl.limparCampo(notificar: false);
   }
 
-  void _solicitarRecuperacao() {
-    final erro = ctrl.validarESolicitarRecuperacao();
+  Future<void> _solicitarRecuperacao() async {
+    final emailInformado = ctrl.txtEmail.text.trim();
+    final erro = await ctrl.validarESolicitarRecuperacao();
+    if (!mounted) return;
+
     if (erro != null) {
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -32,7 +35,6 @@ class _RecuperarSenhaViewState extends State<RecuperarSenhaView> {
       return;
     }
 
-    final emailInformado = ctrl.txtEmail.text.trim();
     ctrl.limparCampo();
 
     ScaffoldMessenger.of(context).clearSnackBars();
@@ -80,7 +82,7 @@ class _RecuperarSenhaViewState extends State<RecuperarSenhaView> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Campo para informação do e-mail cadastrado (RF003)
+                  // Campo para informação do e-mail cadastrado (RF001)
                   TextField(
                     controller: ctrl.txtEmail,
                     keyboardType: TextInputType.emailAddress,
@@ -93,13 +95,24 @@ class _RecuperarSenhaViewState extends State<RecuperarSenhaView> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Botão para solicitar a recuperação da senha (RF003)
+                  // Botão para solicitar a recuperação da senha (RF001)
                   SizedBox(
                     height: 48,
                     child: ElevatedButton.icon(
-                      onPressed: _solicitarRecuperacao,
-                      icon: const Icon(Icons.send_outlined),
-                      label: const Text('Solicitar recuperação de senha'),
+                      onPressed:
+                          ctrl.carregando ? null : _solicitarRecuperacao,
+                      icon: ctrl.carregando
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.send_outlined),
+                      label: Text(
+                        ctrl.carregando
+                            ? 'Enviando e-mail...'
+                            : 'Solicitar recuperação de senha',
+                      ),
                     ),
                   ),
                 ],
